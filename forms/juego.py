@@ -7,10 +7,6 @@ import json
 from utn_fra.pygame_widgets import Label
 
 
-def get_project_root():
-    current_file = os.path.abspath(__file__)
-    return os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
-
 
 def form_juego(datos_iniciales: dict)->dict:
     juego_armado = {}
@@ -188,7 +184,7 @@ def cargar_cartas(path: str) -> list:
         list: Lista de cartas (diccionarios).
     """
     if not os.path.isabs(path):
-        path = os.path.join(get_project_root(), path)
+        path = os.path.join(var.PATH_PROYECTO, path)  
 
     if not os.path.exists(path):
         raise FileNotFoundError(f"Archivo de cartas no encontrado: {path}")
@@ -311,9 +307,9 @@ def cargar_reverso_desde_mazo(mazo, escala):
     if not mazo:
         return None
 
-    base_proyecto = get_project_root()
+    
     ruta_relativa = mazo[0]["ruta_reverso"].replace("\\", "/")
-    ruta = os.path.join(base_proyecto, ruta_relativa)
+    ruta = os.path.join(var.PATH_PROYECTO, ruta_relativa)
 
     if not os.path.exists(ruta):
         print("Reverso no encontrado:", ruta)
@@ -337,8 +333,7 @@ def dibujar_mazo(screen, img_reverso, cantidad, x, y, escala):
         )
 
 def cargar_frente_carta(carta, escala):
-    base_proyecto = get_project_root()
-    ruta = os.path.join(base_proyecto, carta["ruta_frente"])
+    ruta = os.path.join(var.PATH_PROYECTO, carta["ruta_frente"]) 
 
     if not os.path.exists(ruta):
         print("❌ Frente no encontrado:", ruta)
