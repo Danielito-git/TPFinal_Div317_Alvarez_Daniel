@@ -2,65 +2,85 @@ import pygame.mixer as mixer
 import variablesyconst as var
 import pygame as pg
 
+
+
 def iniciar_musica(volumen: int, musica_path):
     pg.mixer.music.load(musica_path)
-    pg.mixer.music.set_volume(volumen)
+    set_volume(volumen)
     pg.mixer.music.play(-1)
 
-def get_actual_volume()-> int:
+def get_actual_volumen() -> int:
     actual_vol = mixer.music.get_volume() * 100
     return int(actual_vol)
 
 
 def set_volume(volumen: int):
-    actual_vol = volumen / 100
-    actual_vol = round(actual_vol, 1)
+    """Establece el volumen en porcentaje (0-100).
+
+    Convierte a la escala que usa pygame (0.0 - 1.0).
+    """
+
+    if volumen < 0:
+        volumen = 0
+    if volumen > 100:
+        volumen = 100
+
+    actual_vol = volumen / 100.0
     mixer.music.set_volume(actual_vol)
 
 def mute_desmute(form_controlador):
-    estado = form_controlador["conf_musica"]["apagada"]
+    estado = form_controlador["conf_musica"].get("apagada", False)
 
     if estado:
-        pg.mixer.music.set_volume(form_controlador["conf_musica"]["volumen"])
+        # desmutear: restaurar volumen guardado
+        volumen = form_controlador["conf_musica"].get("volumen", get_actual_volumen())
+        set_volume(volumen)
         form_controlador["conf_musica"]["apagada"] = False
-
-    else: 
-        pg.mixer.music.set_volume(0)
+    else:
+        # mutear
+        set_volume(0)
         form_controlador["conf_musica"]["apagada"] = True
-    
+
     return form_controlador
 
-def modificar_volumen(eventito, form_opciones):
-    vol_actual = get_actual_volume()
+def modificar_volumen(delta: int, form_controlador: dict):
+    """Modifica el volumen en `delta` (porcentaje) y lo aplica al mixer.
 
-    if form_opciones["btn_mas"]["rect"].collidepoint(eventito):
-        vol_actual += 10
-        set_volume(vol_actual)
+    Actualiza además `form_controlador['conf_musica']['volumen']`.
+    """
+    conf = form_controlador.get("conf_musica", {})
+    vol_actual = conf.get("volumen", get_actual_volumen())
 
-    if form_opciones["btn_menos"]["rect"].collidepoint(eventito):
-        vol_actual -= 10
-        set_volume(vol_actual)
+    vol_actual += int(delta)
+
+    # aplicar límites solicitados
+    if vol_actual < var.MIN_VOLUME:
+        vol_actual = var.MIN_VOLUME
+    if vol_actual > var.MAX_VOLUME:
+        vol_actual = var.MAX_VOLUME
+
+    # guardar y aplicar
+    form_controlador.setdefault("conf_musica", {})["volumen"] = vol_actual
+    set_volume(vol_actual)
     
 
 def evento_mute_desmute(form_controlador, form_opciones, evento):
-    
     if evento.type == pg.MOUSEBUTTONDOWN and evento.button == 1:
         mx, my = evento.pos
 
         if form_opciones["btn_musica"]["rect"].collidepoint(mx, my):
-                mute_desmute(form_controlador)
+            mute_desmute(form_controlador)
 
-def subir_bajar_vol(form_opciones, evento):
+def subir_bajar_vol(form_controlador, form_opciones, evento):
     if evento.type == pg.MOUSEBUTTONDOWN and evento.button == 1:
         mx, my = evento.pos
         eventito = mx, my
 
         if form_opciones["btn_mas"]["rect"].collidepoint(eventito):
-            modificar_volumen(eventito, form_opciones)
-            
+            modificar_volumen(var.STEP_VOLUME, form_controlador)
 
         if form_opciones["btn_menos"]["rect"].collidepoint(eventito):
-            modificar_volumen(eventito, form_opciones)
+            modificar_volumen(-var.STEP_VOLUME, form_controlador)
             
 
 def reproducir_musica_lugar(form_controlador: dict):
@@ -68,9 +88,9 @@ def reproducir_musica_lugar(form_controlador: dict):
 
     ruta_deseada = var.FORMS_MUSICA.get(lugar)
 
-    # Configuración de audio
+    # configuracion de audio
     conf = form_controlador.get("conf_musica", {})
-    volumen = conf.get("volumen", get_actual_volume())
+    volumen = conf.get("volumen", get_actual_volumen())
     apagada = conf.get("apagada", False)
 
     if ruta_deseada is None:
