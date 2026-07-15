@@ -6,13 +6,8 @@ import variablesyconst as var
 from utn_fra.pygame_widgets import Label
 
 
-def get_project_root() -> str:
-    current_file = os.path.abspath(__file__)
-    return os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
-
-
 def guardar_puntos(nombre, datos):
-    archivo = os.path.join(get_project_root(), "puntajes.csv")
+    archivo = os.path.join(var.PATH_PROYECTO, "puntajes.csv")
     existe = os.path.exists(archivo)
 
     with open(archivo, "a", newline="", encoding="utf-8") as f:
@@ -43,8 +38,6 @@ def form_juego_terminado(datos_iniciales):
     form_final["titulo"] = Label( x=var.PANTALLA[0] // 2, y=95,text="FIN DEL JUEGO",screen=screen,
                                 font_path=var.FUENTELETRA,font_size=50,color=var.colores["blanco"],
         )
-
-
     # input simple
 
     form_final["btn_guardar"] = fun.crear_boton("Guardar",fuente_letra, var.colores["blanco"],var.colores["azul"],
