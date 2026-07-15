@@ -1,9 +1,31 @@
+import os
+import csv
 import pygame as pg
 import funciones as fun
 import variablesyconst as var
-import os
-import csv
 from utn_fra.pygame_widgets import Label
+
+
+def get_project_root() -> str:
+    current_file = os.path.abspath(__file__)
+    return os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+
+
+def guardar_puntos(nombre, datos):
+    archivo = os.path.join(get_project_root(), "puntajes.csv")
+    existe = os.path.exists(archivo)
+
+    with open(archivo, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+
+        if not existe:
+            writer.writerow(["nombre", "puntos"])
+
+        writer.writerow([
+            nombre,
+            datos.get("puntos_totales")
+        ])
+
 
 def form_juego_terminado(datos_iniciales):
     form_final = {}
@@ -31,23 +53,6 @@ def form_juego_terminado(datos_iniciales):
     return form_final
 
 
-def guardar_puntos(nombre, datos):
-    archivo = "puntajes.csv"
-    existe = os.path.exists(archivo)
-
-    with open(archivo, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-
-        if not existe:
-            writer.writerow(["nombre", "puntos"])
-
-        writer.writerow([
-            nombre,
-            datos.get("puntos_totales")
-        ])
-
-
-
 def dibujar_game_over(form_final, datos_iniciales):
     screen = form_final["screen"]
     ganador = datos_iniciales.get("ganador")
@@ -65,4 +70,25 @@ def dibujar_game_over(form_final, datos_iniciales):
     
 
     fun.draw_button(screen, form_final["btn_guardar"])
+
+
+def actualizar_game_over(form_final, datos_iniciales, eventos=None):
+    dibujar_game_over(form_final, datos_iniciales)
+
+    if eventos:
+        for eve in eventos:
+            if eve.type == pg.KEYDOWN and form_final["activo"]:
+                if eve.key == pg.K_BACKSPACE:
+                    form_final["player"] = form_final["player"][:-1]
+                elif eve.key == pg.K_RETURN:
+                    guardar_puntos(form_final["player"], datos_iniciales)
+                    fun.resetear_estado_juego(datos_iniciales)
+                    datos_iniciales["lugar"] = "form_menu"
+                else:
+                    form_final["player"] += eve.unicode
+            elif eve.type == pg.MOUSEBUTTONDOWN and eve.button == 1:
+                if form_final["btn_guardar"]["rect"].collidepoint(eve.pos):
+                    guardar_puntos(form_final["player"], datos_iniciales)
+                    fun.resetear_estado_juego(datos_iniciales)
+                    datos_iniciales["lugar"] = "form_menu"
 
