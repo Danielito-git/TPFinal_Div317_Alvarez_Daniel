@@ -8,7 +8,10 @@ FUENTE_NUMERO = "assets/fuentes/Saiyan-Sans.ttf"
 
 VIDASTOTALES = 3
 
-VOLUMEN = 10
+volumen = 10
+MIN_VOLUME = 1
+MAX_VOLUME = 100
+STEP_VOLUME = 5
 
 BONUS_POR_ESTRELLA = 0.1
 
@@ -22,9 +25,9 @@ distribucion = {
     "golden": 1,
     "silver": 3,
     "purple": 4,
-    "red": 6,
-    "blue": 8,
-    "green": 15
+    #"red": 6,
+    #"blue": 8,
+    #"green": 15
 }
 
 ICONOJUEGO = pg.image.load("assets/imagenes/fondos/HD-wallpaper-2d-pixel-art-medieval-background-pack.jpg")
