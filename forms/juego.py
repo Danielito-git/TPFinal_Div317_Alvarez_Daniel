@@ -1,20 +1,22 @@
 import pygame as pg
-import forms.controlador as con
-import confsonido as sonido
 import funciones as fun
 import variablesyconst as var
-import forms.wishes as wi
 import random
 import os
 import json
 from utn_fra.pygame_widgets import Label
 
 
+def get_project_root():
+    current_file = os.path.abspath(__file__)
+    return os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+
+
 def form_juego(datos_iniciales: dict)->dict:
     juego_armado = {}
-    mazo_jugador = crear_mazo_por_distribucion(load_cards(var.CARTAS), var.distribucion)
+    mazo_jugador = crear_mazo_por_distribucion(cargar_cartas(var.CARTAS), var.distribucion)
     reverso_jugador = cargar_reverso_desde_mazo(mazo_jugador, (140,200))
-    mazo_enemigo = crear_mazo_por_distribucion(load_cards(var.CARTAS), var.distribucion)
+    mazo_enemigo = crear_mazo_por_distribucion(cargar_cartas(var.CARTAS), var.distribucion)
     reverso_enemigo = cargar_reverso_desde_mazo(mazo_enemigo, (140,200))
     stats_jugador = fun.calcular_stats_mazo(mazo_jugador)
     stats_enemigo = fun.calcular_stats_mazo(mazo_enemigo)
@@ -27,6 +29,11 @@ def form_juego(datos_iniciales: dict)->dict:
 
     datos_iniciales["vida_max_jugador"] = stats_jugador["hp"]
     datos_iniciales["vida_max_enemigo"] = stats_enemigo["hp"]
+
+    datos_iniciales["wishes_usados"] = {"heal": False, "shield": False}
+
+    datos_iniciales["tiempo_restante_ms"] = var.TIMER_JUEGO * 1000
+    datos_iniciales["ultimo_tick_ms"] = pg.time.get_ticks()
 
     screen = datos_iniciales["screen"]
 
@@ -171,7 +178,7 @@ def form_juego(datos_iniciales: dict)->dict:
 
     return juego_armado
 
-def load_cards(path: str) -> list:
+def cargar_cartas(path: str) -> list:
     """Carga un archivo JSON con cartas y devuelve la lista de cartas.
 
     Args:
@@ -180,6 +187,12 @@ def load_cards(path: str) -> list:
     Returns:
         list: Lista de cartas (diccionarios).
     """
+    if not os.path.isabs(path):
+        path = os.path.join(get_project_root(), path)
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Archivo de cartas no encontrado: {path}")
+
     with open(path, "r", encoding="utf-8") as file:
         data = json.load(file)
     return data
@@ -192,15 +205,13 @@ def obtener_tiempo_str(form_controlador: dict) -> str:
     return f"{minutos:02d}:{segundos:02d}"
 
 def dibujar_juego(form_juego: dict, datos_iniciales: dict):
-    # 1) Actualizar tiempo del controlador
     fun.actualizar_tiempo(datos_iniciales)
     fun.actualizar_labels_stats(form_juego, datos_iniciales)
     fun.actualizar_puntos(form_juego, datos_iniciales)
     
     form_juego['lbl_timer'].text = obtener_tiempo_str(datos_iniciales)
+    fun.actualiza_label(form_juego['lbl_timer'])
 
-
-    # 3) Dibujar fondo del juego
     screen = form_juego['screen']
     screen.blit(var.JUEGO_ESCALADO, (0, 0))
 
@@ -245,10 +256,39 @@ def dibujar_juego(form_juego: dict, datos_iniciales: dict):
     
     for boton in form_juego["lista_botones"]:
         fun.draw_button(screen, boton)
-        
 
     for widget in form_juego['widgets_list']:
         widget.draw()
+
+
+def actualizar_juego(datos_iniciales, eventos=None):
+    if "form_juego" not in datos_iniciales:
+        datos_iniciales["form_juego"] = form_juego(datos_iniciales)
+
+    form_juego_data = datos_iniciales["form_juego"]
+
+    if datos_iniciales.get("juego_terminado"):
+        return
+
+    dibujar_juego(form_juego_data, datos_iniciales)
+
+    if eventos:
+        for eve in eventos:
+            if eve.type == pg.MOUSEBUTTONDOWN and eve.button == 1:
+                boton_play = form_juego_data["btn_play"]
+                if boton_play["rect"].collidepoint(eve.pos):
+                    datos_iniciales["jugar_pendiente"] = True
+
+                boton_heal = form_juego_data["btn_heal"]
+                usados = datos_iniciales.get("wishes_usados", {})
+
+                if boton_heal["rect"].collidepoint(eve.pos) and not (usados.get("heal") and usados.get("shield")):
+                    datos_iniciales["lugar"] = "form_wish_confirm"
+
+    if datos_iniciales.get("jugar_pendiente"):
+        ejecutar_jugada(form_juego_data, datos_iniciales)
+        datos_iniciales["jugar_pendiente"] = False
+
 
 def crear_mazo_por_distribucion(cartas, distribucion):
     mazo = []
@@ -271,15 +311,12 @@ def cargar_reverso_desde_mazo(mazo, escala):
     if not mazo:
         return None
 
-    archivo_actual = os.path.abspath(__file__)
-    base_forms = os.path.dirname(archivo_actual)
-    base_proyecto = os.path.dirname(base_forms)   #
-
+    base_proyecto = get_project_root()
     ruta_relativa = mazo[0]["ruta_reverso"].replace("\\", "/")
     ruta = os.path.join(base_proyecto, ruta_relativa)
 
     if not os.path.exists(ruta):
-        print("❌ Reverso no encontrado:", ruta)
+        print("Reverso no encontrado:", ruta)
         return None
 
     imagen = pg.image.load(ruta).convert_alpha()
@@ -300,10 +337,7 @@ def dibujar_mazo(screen, img_reverso, cantidad, x, y, escala):
         )
 
 def cargar_frente_carta(carta, escala):
-    base_proyecto = os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))
-    )
-
+    base_proyecto = get_project_root()
     ruta = os.path.join(base_proyecto, carta["ruta_frente"])
 
     if not os.path.exists(ruta):
@@ -331,6 +365,20 @@ def calcular_penalizacion(carta: dict) -> dict:
         "def": carta["def"] * bonus
     }
 
+def ejecutar_wish(datos):
+    wishes = datos.get("wishes", {})
+
+    if wishes.get("heal"):
+        datos["vida_jugador"] += datos.get("vida_max_jugador", 0)
+        wishes["heal"] = False
+
+    if wishes.get("shield"):
+        datos["shield_activo"] = True
+        wishes["shield"] = False
+
+    return datos
+
+
 def ejecutar_jugada(form_juego, datos_iniciales):
 
     if datos_iniciales.get("juego_terminado"):
@@ -352,7 +400,7 @@ def ejecutar_jugada(form_juego, datos_iniciales):
     atk_j = calcular_ataque_efectivo(carta_j)
     atk_e = calcular_ataque_efectivo(carta_e)
 
-    wi.ejecutar_wish(datos_iniciales)
+    ejecutar_wish(datos_iniciales)
 
     if atk_j > atk_e:
         perdedor = "enemigo"
@@ -380,7 +428,6 @@ def ejecutar_jugada(form_juego, datos_iniciales):
             datos_iniciales["vida_enemigo"] -= 2*damage
             datos_iniciales["shield_activo"] = False
         else:
-            # daño normal
             if perdedor == "jugador":
                 datos_iniciales["vida_jugador"] -= 2*damage
             else:
