@@ -8,7 +8,7 @@ from utn_fra.pygame_widgets import Label
 def obtener_tops(ruta_csv: str):
     matriz = []
 
-    ruta_csv = os.path.join(fun.get_project_root(), ruta_csv)
+    ruta_csv = os.path.join(var.PATH_PROYECTO, ruta_csv)
 
     if not os.path.exists(ruta_csv):
         return []
