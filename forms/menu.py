@@ -1,11 +1,8 @@
 import pygame as pg
-import forms.controlador as con
 import variablesyconst as var
 import funciones as fun
-import sys
-from utn_fra.pygame_widgets import (
-    Label, Button
-)
+import forms.controlador as controlador
+from utn_fra.pygame_widgets import Label
 
 
 def form_menu(datos_iniciales):
@@ -21,7 +18,6 @@ def form_menu(datos_iniciales):
     fuente_letra = pg.font.Font(var.FUENTELETRA, 30)
     ancho, alto = var.PANTALLA
 
-    # --- TÍTULO ---
     menu_armado["lbl_titulo"] = Label(
         x=ancho // 2,
         y=80,
@@ -33,7 +29,6 @@ def form_menu(datos_iniciales):
         
     )
 
-    # --- BOTONES ---
     espacio = 80
 
     
@@ -49,7 +44,7 @@ def form_menu(datos_iniciales):
                                                 ancho // 2 - 140 , 200 + 2*espacio ,w=280, h=50
                                     )
     menu_armado["btn_tutorial"] = fun.crear_boton(text="TUTORIAL",font=fuente_letra,txt_color=var.colores["blanco"],
-                                                bg_color=var.colores["naranja"], x=var.PANTALLA[0] // 2 - 100,y=360,
+                                                bg_color=var.colores["naranja"], x=570,y=500,
                                                 w=200, h=60
                                     )
     menu_armado["btn_salir"]= fun.crear_boton("SALIR",fuente_letra, var.colores["rojo"],var.colores["negro"],
@@ -69,16 +64,21 @@ def form_menu(datos_iniciales):
 
     
 def dibujar_menu(form_menu):
-
     screen = pg.display.get_surface()
-    
-
     screen.blit(var.MENUE_SCALADO, (0, 0))
-    # Título
     form_menu["lbl_titulo"].draw()
 
-    # Botones
     for boton in form_menu["widgets_list"]:
         fun.draw_button(screen, boton)
+
+
+def actualizar_menu(datos_iniciales, eventos=None):
+    form_menu_data = form_menu(datos_iniciales)
+    dibujar_menu(form_menu_data)
+
+    if eventos:
+        for eve in eventos:
+            if eve.type == pg.MOUSEBUTTONDOWN and eve.button == 1:
+                controlador.cambiar_lugar(datos_iniciales, form_menu_data, eve.pos)
 
 
