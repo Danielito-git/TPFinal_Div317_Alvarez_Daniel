@@ -1,6 +1,6 @@
 import pygame as pg
 import json
-
+PATH_PROYECTO = os.path.dirname(os.path.abspath(__file__))
 PANTALLA = 800, 600
 
 FUENTELETRA = "assets/fuentes/alagard.ttf"
