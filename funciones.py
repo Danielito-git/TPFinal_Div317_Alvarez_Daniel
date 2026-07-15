@@ -1,5 +1,6 @@
 import pygame as pg
 import variablesyconst as var
+import os
 
 
 def crear_boton(text: str, font: pg.font.Font, txt_color: tuple, bg_color: tuple, x: int, y: int, w: int, h: int) -> dict:
@@ -120,11 +121,11 @@ def actualizar_tiempo(datos_iniciales: dict) -> dict:
     ahora = pg.time.get_ticks()
     ultimo = datos_iniciales.get("ultimo_tick_ms", ahora)
 
-    delta = ahora - ultimo          # ms transcurridos desde el último frame
+    transcurridos = ahora - ultimo   # ms transcurridos desde el último frame
     datos_iniciales["ultimo_tick_ms"] = ahora
 
     restante = datos_iniciales.get("tiempo_restante_ms", 0)
-    restante -= delta
+    restante -= transcurridos
     if restante < 0:
         restante = 0
 
