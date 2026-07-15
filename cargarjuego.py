@@ -1,7 +1,7 @@
 import pygame as pg
 import confsonido as sonido
 import variablesyconst as var
-import forms.controlador as con
+import forms.controlador as controlador
 import sys
 
 
@@ -12,7 +12,8 @@ def iniciar_juego():
 
     pamtalla = pg.display.set_mode(var.PANTALLA)
     pg.display.set_caption("Mi jueguito lindo")
-    
+    pg.display.set_icon(var.ICONOJUEGO)
+
 
     corriendo = True
     reloj = pg.time.Clock()
@@ -23,14 +24,12 @@ def iniciar_juego():
         "screen": pamtalla,
         "lugar": "form_menu",
         "tema_actual": var.FORMS_MUSICA["form_menu"],
-        "tiempo_restante_ms": var.TIMER_JUEGO * 1000,
-        "ultimo_tick_ms": pg.time.get_ticks(),
         "juego_terminado" : False,
         "ganador": None,
         "carta_jugador_actual": None,
         "carta_enemigo_actual": None,
         "conf_musica": {
-           "volumen" : var.VOLUMEN,
+           "volumen" : var.volumen,
            "apagada" : False,
            "prendida" : True
         }
@@ -49,16 +48,13 @@ def iniciar_juego():
 
         for evento in eventos:
             if evento.type == pg.QUIT:
-                corriendo = False
+                datos_juego["salir"] = True
 
         
-        con.update_forms(datos_juego, eventos)
+        controlador.update_forms(datos_juego, eventos)
+
         sonido.reproducir_musica_lugar(datos_juego)
 
-        pg.display.set_icon(var.ICONOJUEGO)
         pg.display.flip()
-        
         reloj.tick(30)
     
-    pg.quit()
-    sys.exit()
