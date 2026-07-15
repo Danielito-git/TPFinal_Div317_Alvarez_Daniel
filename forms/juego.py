@@ -186,9 +186,6 @@ def cargar_cartas(path: str) -> list:
     if not os.path.isabs(path):
         path = os.path.join(var.PATH_PROYECTO, path)  
 
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Archivo de cartas no encontrado: {path}")
-
     with open(path, "r", encoding="utf-8") as file:
         data = json.load(file)
     return data
@@ -291,12 +288,6 @@ def crear_mazo_por_distribucion(cartas, distribucion):
 
     for color, cantidad in distribucion.items():
         cartas_color = [c for c in cartas if color in c["serie"]]
-
-        if len(cartas_color) < cantidad:
-            raise ValueError(
-                f"No hay suficientes cartas para '{color}' "
-                f"(pedidas {cantidad}, disponibles {len(cartas_color)})"
-            )
             
         mazo.extend(random.sample(cartas_color, cantidad))
         #random.shuffle(mazo)
